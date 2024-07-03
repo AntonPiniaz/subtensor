@@ -9074,6 +9074,7 @@ dependencies = [
  "pallet-subtensor",
  "serde",
  "sp-api",
+ "sp-runtime",
 ]
 
 [[package]]

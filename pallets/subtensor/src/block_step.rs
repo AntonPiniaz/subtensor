@@ -179,8 +179,18 @@ impl<T: Config> Pallet<T> {
             PendingEmission::<T>::insert(netuid, 0);
 
             // --- 8. Run the epoch mechanism and return emission tuples for hotkeys in the network.
-            let emission_tuples_this_block: Vec<(T::AccountId, u64, u64)> =
-                Self::epoch(netuid, emission_to_drain);
+            let emission_tuples_result = Self::epoch(netuid, Some(true));
+            let mut emission_tuples_this_block: Vec<(T::AccountId, u64, u64)> = Vec::new();
+            match emission_tuples_result {
+                Ok(emission_tuples) => {
+                    // Process the emission tuples
+                    emission_tuples_this_block = emission_tuples;
+                }
+                Err(incentive_values) => {
+                    // Handle the incentive error
+                    log::error!("Error in epoch, incentive values: {:?}", incentive_values);
+                }
+            }
             log::debug!(
                 "netuid_i: {:?} emission_to_drain: {:?} ",
                 netuid,

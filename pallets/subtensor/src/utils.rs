@@ -75,6 +75,9 @@ impl<T: Config> Pallet<T> {
     pub fn get_emission(netuid: u16) -> Vec<u64> {
         Emission::<T>::get(netuid)
     }
+    pub fn get_rao_emission(netuid: u16) -> u64 {
+        RaoEmission::<T>::get(netuid)
+    }
     pub fn get_consensus(netuid: u16) -> Vec<u16> {
         Consensus::<T>::get(netuid)
     }

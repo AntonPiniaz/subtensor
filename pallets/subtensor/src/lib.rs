@@ -1015,6 +1015,9 @@ pub mod pallet {
     #[pallet::storage] // --- DMAP ( netuid ) --> emission
     pub(super) type Emission<T: Config> =
         StorageMap<_, Identity, u16, Vec<u64>, ValueQuery, EmptyU64Vec<T>>;
+    #[pallet::storage] // --- DMAP ( netuid ) --> rao_emission
+    pub(super) type RaoEmission<T: Config> =
+        StorageMap<_, Identity, u16, u64, ValueQuery>;
     #[pallet::storage] // --- DMAP ( netuid ) --> last_update
     pub(super) type LastUpdate<T: Config> =
         StorageMap<_, Identity, u16, Vec<u64>, ValueQuery, EmptyU64Vec<T>>;

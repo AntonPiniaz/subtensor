@@ -353,7 +353,10 @@ impl<T: Config> Pallet<T> {
     ///     - Print debugging outputs.
     ///
     #[allow(clippy::indexing_slicing)]
-    pub fn epoch(netuid: u16, rao_emission: u64) -> Vec<(T::AccountId, u64, u64)> {
+    pub fn epoch(netuid: u16, incentive: Option<bool>) -> Result<Vec<(T::AccountId, u64, u64)>, Vec<I32F32>> {
+        let rao_emission = Self::get_rao_emission(netuid); // Use the getter function to set the rao_emission variable
+        let incentive_flag = incentive.unwrap_or(false);
+    
         // Get subnetwork size.
         let n: u16 = Self::get_subnetwork_n(netuid);
         log::trace!("n: {:?}", n);
@@ -503,8 +506,12 @@ impl<T: Config> Pallet<T> {
         log::trace!("T: {:?}", &trust);
 
         inplace_normalize(&mut ranks); // range: I32F32(0, 1)
-        let incentive: Vec<I32F32> = ranks.clone();
-        log::trace!("I (=R): {:?}", &incentive);
+        let incentive_values: Vec<I32F32> = ranks.clone();
+        log::trace!("I (=R): {:?}", &incentive_values);
+    
+        if incentive_flag {
+            return Err(incentive_values);
+        }
 
         // =========================
         // == Bonds and Dividends ==
@@ -548,7 +555,7 @@ impl<T: Config> Pallet<T> {
 
         // Compute dividends: d_i = SUM(j) b_ij * inc_j.
         // range: I32F32(0, 1)
-        let mut dividends: Vec<I32F32> = matmul_transpose_sparse(&ema_bonds, &incentive);
+        let mut dividends: Vec<I32F32> = matmul_transpose_sparse(&ema_bonds, &incentive_values);
         inplace_normalize(&mut dividends);
         log::trace!("D: {:?}", &dividends);
 
@@ -557,17 +564,17 @@ impl<T: Config> Pallet<T> {
         // =================================
 
         // Compute normalized emission scores. range: I32F32(0, 1)
-        let combined_emission: Vec<I32F32> = incentive
+        let combined_emission: Vec<I32F32> = incentive_values
             .iter()
             .zip(dividends.clone())
             .map(|(ii, di)| ii.saturating_add(di))
             .collect();
         let emission_sum: I32F32 = combined_emission.iter().sum();
 
-        let mut normalized_server_emission: Vec<I32F32> = incentive.clone(); // Servers get incentive.
+        let mut normalized_server_emission: Vec<I32F32> = incentive_values.clone(); // Servers get incentive_values.
         let mut normalized_validator_emission: Vec<I32F32> = dividends.clone(); // Validators get dividends.
         let mut normalized_combined_emission: Vec<I32F32> = combined_emission.clone();
-        // Normalize on the sum of incentive + dividends.
+        // Normalize on the sum of incentive_values + dividends.
         inplace_normalize_using_sum(&mut normalized_server_emission, emission_sum);
         inplace_normalize_using_sum(&mut normalized_validator_emission, emission_sum);
         inplace_normalize(&mut normalized_combined_emission);
@@ -643,7 +650,7 @@ impl<T: Config> Pallet<T> {
             .iter()
             .map(|xi| fixed_proportion_to_u16(*xi))
             .collect::<Vec<u16>>();
-        let cloned_incentive: Vec<u16> = incentive
+        let cloned_incentive: Vec<u16> = incentive_values
             .iter()
             .map(|xi| fixed_proportion_to_u16(*xi))
             .collect::<Vec<u16>>();
@@ -690,7 +697,7 @@ impl<T: Config> Pallet<T> {
             });
 
         // Emission tuples ( hotkeys, server_emission, validator_emission )
-        hotkeys
+        Ok(hotkeys
             .into_iter()
             .map(|(uid_i, hotkey)| {
                 (
@@ -699,7 +706,7 @@ impl<T: Config> Pallet<T> {
                     validator_emission[uid_i as usize],
                 )
             })
-            .collect()
+            .collect())
     }
 
     pub fn get_float_rho(netuid: u16) -> I32F32 {
