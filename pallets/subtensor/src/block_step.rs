@@ -179,7 +179,7 @@ impl<T: Config> Pallet<T> {
             PendingEmission::<T>::insert(netuid, 0);
 
             // --- 8. Run the epoch mechanism and return emission tuples for hotkeys in the network.
-            let emission_tuples_result = Self::epoch(netuid, Some(true));
+            let emission_tuples_result = Self::epoch(netuid, Some(false));
             let mut emission_tuples_this_block: Vec<(T::AccountId, u64, u64)> = Vec::new();
             match emission_tuples_result {
                 Ok(emission_tuples) => {
